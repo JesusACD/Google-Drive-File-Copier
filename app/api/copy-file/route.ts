@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       const copiedFile = await drive.files.copy({
         fileId: fileId,
         requestBody: {
-          name: `Copia de ${fileMetadata.data.name}`,
+          name: fileMetadata.data.name,
         },
         fields: "id, name, webViewLink",
       });
@@ -135,7 +135,7 @@ async function copyFolder(
   // Crear la nueva carpeta
   const newFolder = await drive.files.create({
     requestBody: {
-      name: `Copia de ${folderName}`,
+      name: folderName,
       mimeType: "application/vnd.google-apps.folder",
       parents: parentId ? [parentId] : undefined,
     },

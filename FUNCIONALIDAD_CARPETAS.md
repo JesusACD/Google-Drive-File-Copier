@@ -26,10 +26,12 @@ La aplicación ahora soporta la copia de **carpetas completas** de Google Drive,
 
 ### Resultado
 
-La aplicación creará una nueva carpeta llamada "Copia de [nombre original]" con:
-- Todos los archivos de la carpeta original
-- Todas las subcarpetas con sus contenidos
+La aplicación creará una nueva carpeta con el mismo nombre que la original, conteniendo:
+- Todos los archivos de la carpeta original (con sus nombres originales)
+- Todas las subcarpetas con sus contenidos (con sus nombres originales)
 - La misma estructura de carpetas
+
+**Nota:** Si ya existe una carpeta con el mismo nombre, Google Drive creará la copia sin conflictos (ambas carpetas pueden coexistir con el mismo nombre).
 
 ## ⚙️ Cómo Funciona
 
@@ -154,7 +156,7 @@ Cuando se copia una carpeta, verás:
 Ejemplo:
 ```
 Carpeta copiada exitosamente con 45 elementos
-Copia de Mi Proyecto
+Mi Proyecto
 Se copiaron 45 elementos en total
 [Ver en Drive]
 ```
