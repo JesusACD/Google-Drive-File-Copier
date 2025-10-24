@@ -10,13 +10,20 @@ interface CopiedFile {
   id: string;
   name: string;
   webViewLink: string;
+  itemsCopied?: number;
+}
+
+interface SuccessData {
+  file?: CopiedFile;
+  folder?: CopiedFile;
+  message: string;
 }
 
 export function FileCopier() {
   const [fileUrl, setFileUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<CopiedFile | null>(null);
+  const [success, setSuccess] = useState<SuccessData | null>(null);
 
   const handleCopyFile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +46,7 @@ export function FileCopier() {
         throw new Error(data.error || "Error al copiar el archivo");
       }
 
-      setSuccess(data.file);
+      setSuccess(data);
       setFileUrl("");
     } catch (err: any) {
       setError(err.message || "Error al copiar el archivo");
@@ -53,10 +60,10 @@ export function FileCopier() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Copy className="h-6 w-6" />
-          Copiar Archivo de Google Drive
+          Copiar Archivos y Carpetas de Google Drive
         </CardTitle>
         <CardDescription>
-          Ingresa la URL del archivo de Google Drive que deseas copiar a tu cuenta
+          Ingresa la URL del archivo o carpeta de Google Drive que deseas copiar a tu cuenta
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -114,19 +121,24 @@ export function FileCopier() {
               <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                  ¡Archivo copiado exitosamente!
+                  {success.message}
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                  {success.name}
+                  {success.file?.name || success.folder?.name}
                 </p>
-                {success.webViewLink && (
+                {success.folder?.itemsCopied && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Se copiaron {success.folder.itemsCopied} elementos en total
+                  </p>
+                )}
+                {(success.file?.webViewLink || success.folder?.webViewLink) && (
                   <a
-                    href={success.webViewLink}
+                    href={success.file?.webViewLink || success.folder?.webViewLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline mt-2"
                   >
-                    Ver archivo en Drive
+                    Ver en Drive
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
@@ -137,11 +149,26 @@ export function FileCopier() {
 
         <div className="mt-6 p-4 bg-muted/50 rounded-md">
           <h4 className="text-sm font-medium mb-2">Formatos de URL soportados:</h4>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• https://drive.google.com/file/d/FILE_ID/view</li>
-            <li>• https://drive.google.com/open?id=FILE_ID</li>
-            <li>• Solo el FILE_ID</li>
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Archivos:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• https://drive.google.com/file/d/FILE_ID/view</li>
+                <li>• https://drive.google.com/open?id=FILE_ID</li>
+                <li>• Solo el FILE_ID</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Carpetas:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• https://drive.google.com/drive/folders/FOLDER_ID</li>
+                <li>• Solo el FOLDER_ID</li>
+              </ul>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                ⚠️ Las carpetas grandes pueden tardar varios minutos
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-    // Verificar que el archivo existe y tenemos acceso
+    // Verificar que el archivo/carpeta existe y tenemos acceso
     let fileMetadata;
     try {
       fileMetadata = await drive.files.get({
@@ -71,24 +71,43 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    // Copiar el archivo
-    const copiedFile = await drive.files.copy({
-      fileId: fileId,
-      requestBody: {
-        name: `Copia de ${fileMetadata.data.name}`,
-      },
-      fields: "id, name, webViewLink",
-    });
+    // Verificar si es una carpeta
+    const isFolder = fileMetadata.data.mimeType === "application/vnd.google-apps.folder";
 
-    return NextResponse.json({
-      success: true,
-      file: {
-        id: copiedFile.data.id,
-        name: copiedFile.data.name,
-        webViewLink: copiedFile.data.webViewLink,
-      },
-      message: "Archivo copiado exitosamente",
-    });
+    if (isFolder) {
+      // Copiar carpeta recursivamente
+      const result = await copyFolder(drive, fileId, fileMetadata.data.name || "Carpeta sin nombre", null);
+      
+      return NextResponse.json({
+        success: true,
+        folder: {
+          id: result.id,
+          name: result.name,
+          webViewLink: result.webViewLink,
+          itemsCopied: result.itemsCopied,
+        },
+        message: `Carpeta copiada exitosamente con ${result.itemsCopied} elementos`,
+      });
+    } else {
+      // Copiar archivo
+      const copiedFile = await drive.files.copy({
+        fileId: fileId,
+        requestBody: {
+          name: `Copia de ${fileMetadata.data.name}`,
+        },
+        fields: "id, name, webViewLink",
+      });
+
+      return NextResponse.json({
+        success: true,
+        file: {
+          id: copiedFile.data.id,
+          name: copiedFile.data.name,
+          webViewLink: copiedFile.data.webViewLink,
+        },
+        message: "Archivo copiado exitosamente",
+      });
+    }
   } catch (error: any) {
     console.error("Error al copiar archivo:", error);
 
@@ -104,6 +123,71 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Función para copiar una carpeta recursivamente
+async function copyFolder(
+  drive: any,
+  folderId: string,
+  folderName: string,
+  parentId: string | null
+): Promise<{ id: string; name: string; webViewLink: string; itemsCopied: number }> {
+  // Crear la nueva carpeta
+  const newFolder = await drive.files.create({
+    requestBody: {
+      name: `Copia de ${folderName}`,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: parentId ? [parentId] : undefined,
+    },
+    fields: "id, name, webViewLink",
+  });
+
+  let itemsCopied = 0;
+
+  // Listar todos los archivos y subcarpetas dentro de la carpeta original
+  const response = await drive.files.list({
+    q: `'${folderId}' in parents and trashed=false`,
+    fields: "files(id, name, mimeType)",
+    pageSize: 1000,
+  });
+
+  const items = response.data.files || [];
+
+  // Copiar cada elemento
+  for (const item of items) {
+    try {
+      if (item.mimeType === "application/vnd.google-apps.folder") {
+        // Es una subcarpeta, copiar recursivamente
+        const subfolderResult = await copyFolder(
+          drive,
+          item.id,
+          item.name,
+          newFolder.data.id
+        );
+        itemsCopied += subfolderResult.itemsCopied;
+      } else {
+        // Es un archivo, copiarlo
+        await drive.files.copy({
+          fileId: item.id,
+          requestBody: {
+            name: item.name,
+            parents: [newFolder.data.id],
+          },
+        });
+        itemsCopied++;
+      }
+    } catch (error) {
+      console.error(`Error al copiar ${item.name}:`, error);
+      // Continuar con el siguiente archivo aunque uno falle
+    }
+  }
+
+  return {
+    id: newFolder.data.id,
+    name: newFolder.data.name,
+    webViewLink: newFolder.data.webViewLink,
+    itemsCopied: itemsCopied + 1, // +1 por la carpeta misma
+  };
 }
 
 function extractFileId(url: string): string | null {
@@ -122,6 +206,8 @@ function extractFileId(url: string): string | null {
     /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
     // https://docs.google.com/presentation/d/FILE_ID/edit
     /\/presentation\/d\/([a-zA-Z0-9_-]+)/,
+    // https://drive.google.com/drive/folders/FOLDER_ID
+    /\/folders\/([a-zA-Z0-9_-]+)/,
     // Solo el ID
     /^([a-zA-Z0-9_-]{25,})$/,
   ];

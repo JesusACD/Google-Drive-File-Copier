@@ -1,15 +1,17 @@
 # Google Drive File Copier
 
-Una aplicación web moderna para copiar archivos de Google Drive a tu cuenta de forma sencilla y segura.
+Una aplicación web moderna para copiar archivos y carpetas de Google Drive a tu cuenta de forma sencilla y segura.
 
 ## 🚀 Características
 
 - ✅ Autenticación segura con Google OAuth 2.0
 - ✅ Copia archivos de Google Drive con solo pegar la URL
+- ✅ **Copia carpetas completas recursivamente** (incluyendo subcarpetas)
 - ✅ Interfaz moderna y responsive
 - ✅ Soporte para múltiples formatos de URL
 - ✅ Feedback visual del proceso de copia
-- ✅ Acceso directo al archivo copiado
+- ✅ Contador de elementos copiados para carpetas
+- ✅ Acceso directo al archivo o carpeta copiada
 
 ## 🛠️ Tecnologías
 
@@ -115,16 +117,23 @@ pnpm start
 ## 📖 Uso
 
 1. **Inicia sesión** con tu cuenta de Google
-2. **Copia la URL** del archivo de Google Drive que deseas copiar
+2. **Copia la URL** del archivo o carpeta de Google Drive que deseas copiar
 3. **Pega la URL** en el campo de entrada
 4. **Haz clic en "Copiar Archivo"**
-5. **¡Listo!** El archivo se copiará a tu Google Drive
+5. **¡Listo!** El archivo o carpeta se copiará a tu Google Drive
 
 ### Formatos de URL soportados
 
+**Para archivos:**
 - `https://drive.google.com/file/d/FILE_ID/view`
 - `https://drive.google.com/open?id=FILE_ID`
 - Solo el `FILE_ID`
+
+**Para carpetas:**
+- `https://drive.google.com/drive/folders/FOLDER_ID`
+- Solo el `FOLDER_ID`
+
+**Nota:** Las carpetas se copian recursivamente, incluyendo todos los archivos y subcarpetas. Las carpetas grandes pueden tardar varios minutos en copiarse.
 
 ## 🔒 Seguridad
 
